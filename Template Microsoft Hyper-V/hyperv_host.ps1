@@ -1,5 +1,4 @@
-
-#requires -version 3
+ #requires -version 3
 
 <#
 .SYNOPSIS
@@ -16,7 +15,6 @@
 	Value - var for key, may be single or multiply
 .INPUTS
   Input 3 variables
-
 .OUTPUTS
   Output in JSON format for Zabbix 
 .NOTES
@@ -131,7 +129,14 @@ if ($ActionType -eq "discover") {
     # Discover in not clustered virtual machine's storage devices
     if ($Key -eq "vm_sd") {
         $vms = get-vm | Where-Object {$_.IsClustered -eq $False} | Select-Object Name 
-        $networkadapters = Get-WmiObject Win32_PerfFormattedData_Counters_HyperVVirtualStorageDevice | Select-Object Name
+        #10.0.14393 means server 2016
+        $win_ver = (Get-CimInstance win32_operatingsystem).version
+        $wmi_class_name = "Win32_PerfFormattedData_Counters_HyperVVirtualStorageDevice"
+
+        if([System.Version]"$win_ver" -lt [System.Version]"10.0.14393" ) {
+            $wmi_class_name = "Win32_PerfRawData_StorageStats_HyperVVirtualStorageDevice"
+        }       
+        $networkadapters = Get-WmiObject  $wmi_class_name |Select-Object Name
         $result = @()
         foreach ($networkadapter in $networkadapters) {
             foreach ($vm in $vms) {
@@ -234,5 +239,4 @@ if ($ActionType -eq "get") {
     }
 
    
-}
-	
+} 
